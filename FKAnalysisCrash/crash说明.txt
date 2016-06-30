@@ -1,0 +1,69 @@
+reason: *** -[__NSArrayM objectAtIndex:]: index 3 beyond bounds [0 .. 2]
+callStackSymbols: (
+	0   CoreFoundation                      0x00000001845082f4  + 160
+	1   libobjc.A.dylib                     0x00000001961dc0e4 objc_exception_throw + 60
+	2   CoreFoundation                      0x00000001843eb85c  + 0
+	3   DemoAPP                             0x0000000100e455b0 DemoAPP + 14685616
+	4   DemoAPP                             0x0000000100e45818 DemoAPP + 14686232
+	5   UIKit                               0x00000001892819fc  + 544
+	6   UIKit                               0x0000000189275824  + 2364
+	7   UIKit                               0x00000001890611fc  + 172
+	8   UIKit                               0x0000000188f7d6f4  + 580
+	9   QuartzCore                          0x00000001888b9db8  + 152
+	10  QuartzCore                          0x00000001888b4820  + 320
+	11  QuartzCore                          0x00000001888b46c4  + 32
+	12  QuartzCore                          0x00000001888b3e58  + 276
+	13  QuartzCore                          0x00000001888b3bd8  + 528
+	14  QuartzCore                          0x00000001888ad300  + 80
+	15  CoreFoundation                      0x00000001844c02a4  + 32
+	16  CoreFoundation                      0x00000001844bd230  + 360
+	17  CoreFoundation                      0x00000001844bd610  + 836
+	18  CoreFoundation                      0x00000001843e92d4 CFRunLoopRunSpecific + 396
+	19  GraphicsServices                    0x000000018de3f6fc GSEventRunModal + 168
+	20  UIKit                               0x0000000188fe6f40 UIApplicationMain + 1488
+	21  DemoAPP                             0x0000000100d8d798 DemoAPP + 13932440
+	22  libdyld.dylib                       0x0000000196886a08  + 4
+)
+
+Process name: DemoAPP
+dSYM UUID: 4226F8ED-73A1-3B91-8BF2-CDE65045F960
+Architecture: arm64
+Start Address: 0x100044000
+Slide Address: 0x44000
+
+
+crash地址解说:(以序列号为3来进行分析)
+
+app的调用堆栈是从下到上的因此最后crash的地方一定是在序列比较小的地方因为我们的appname为DemoApp所以这个是最后crash的地方
+
+	3   DemoAPP                             0x0000000100e455b0 DemoAPP + 14685616
+
+对应名词:
+14685616  					: 偏移量  (运行时产生)  十进制值 转为16进制时值为  0xe015b0
+0x0000000100e455b0			: 运行时栈地址stact address(app每次运行都不一样)   (运行时产生)
+DemoAPP                     : 元素地址即符号化地址(+ 14685616前面的),口头常说的crash地址,最终要定位crash就是要这个,
+							  但现在看到的是符号，怎么求出这个地址？后面说 (静态编译时产生)
+4226F8ED-73A1-3B91-8BF2-CDE65045F960 : UUID 在解crash时，一定要注意crash日志中的uuid要和dSYM中的一至 (静态编译时产生)
+arm64						: cpu指令集
+0x100044000					: 运行时起始地址 (运行时产生)
+0x44000					    : 运行时偏移地址 (运行时产生)
+
+运行时产生是指每次app运行得到的值都是不一样的
+静态编译生成指不管app怎么运行，这个地址在编译的时候就固定下来,只有app代码重新编译时才改变
+
+各地址关系:
+描述     运行时栈地址stact address            Start Address        偏移量
+        0x0000000100e455b0           -     0x100044000     =    0xe015b0 (14685616)
+
+描述     运行时栈地址stact address            Slide Address        DemoAPP(crash地址)
+        0x0000000100e455b0           -     0x44000         =    0x0000000100e015b0
+		
+描述     DemoAPP(crash地址)                  偏移量               虚拟地址空间(静态编译时产生)
+        0x0000000100e015b0     -     0xe015b0 (14685616)   =    0x100000000
+
+描述     Start Address                  Slide Address           虚拟地址空间(静态编译时产生)
+        0x100044000            -          0x44000          =    0x100000000
+		
+快速求出crash地址:
+1.   运行时栈地址stact address - Slide Address
+2.   虚拟地址空间(静态编译时产生) + 偏移量
